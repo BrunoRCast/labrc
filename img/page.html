@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WHP50g</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-color: #000000;
+            color: #00FF00;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 95vh;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #00FF00;
+            padding-bottom: 10px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00FF00;
+        }
+        
+        .config-btn {
+            background: #000000;
+            color: #00FF00;
+            border: 1px solid #00FF00;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+        
+        .config-btn:hover {
+            background: #00FF00;
+            color: #000000;
+            box-shadow: 0 0 15px #00FF00;
+        }
+        
+        .terminal {
+            flex-grow: 1;
+            background-color: #001100;
+            border: 1px solid #00FF00;
+            padding: 15px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .input-field {
+            width: 100%;
+            height: 120px;
+            background: #000000;
+            color: #00FF00;
+            border: 1px solid #00FF00;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            white-space: pre;
+            overflow: auto;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            box-shadow: 0 0 10px #00FF00;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .send-btn, .clear-btn, .char-btn {
+            background: #000000;
+            color: #00FF00;
+            border: 1px solid #00FF00;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+            min-width: 100px;
+        }
+        
+        .send-btn:hover, .clear-btn:hover, .char-btn:hover {
+            background: #00FF00;
+            color: #000000;
+            box-shadow: 0 0 15px #00FF00;
+        }
+        
+        .clear-btn {
+            background: #330000;
+            border-color: #FF3300;
+        }
+        
+        .clear-btn:hover {
+            background: #FF3300;
+            color: #000000;
+            box-shadow: 0 0 15px #FF3300;
+        }
+        
+        .char-btn {
+            min-width: auto;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #001100;
+            border: 2px solid #00FF00;
+            padding: 30px;
+            width: 400px;
+            max-width: 90%;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #00FF00;
+            padding-bottom: 10px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #00FF00;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .config-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .form-group label {
+            font-weight: bold;
+        }
+        
+        .form-group select, .form-group input {
+            background: #000000;
+            color: #00FF00;
+            border: 1px solid #00FF00;
+            padding: 5px;
+            font-family: 'Courier New', monospace;
+            width: 150px;
+        }
+        
+        .apply-btn {
+            background: #000000;
+            color: #00FF00;
+            border: 1px solid #00FF00;
+            padding: 10px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        
+        .apply-btn:hover {
+            background: #00FF00;
+            color: #000000;
+            box-shadow: 0 0 15px #00FF00;
+        }
+        
+        .matrix-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .code-example {
+            margin-top: 10px;
+            padding: 10px;
+            background: #002200;
+            border: 1px dashed #00FF00;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .code-example:hover {
+            background: #003300;
+        }
+        
+        .char-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 5px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #002200;
+            border: 1px solid #00FF00;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .status {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #00AA00;
+        }
+        
+        .hp50g-info {
+            font-size: 11px;
+            color: #00AA00;
+            margin-top: 5px;
+            padding: 5px;
+            background: #001a00;
+            border-left: 2px solid #00FF00;
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-effect" id="matrixEffect"></div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="title">WHP50g</div>
+            <button class="config-btn" onclick="openConfig()">CONFIGURAÇÃO</button>
+        </div>
+        
+        <div class="terminal" id="terminal"></div>
+        
+        <div class="input-area">
+            <textarea class="input-field" id="inputField" placeholder="Digite seus comandos aqui... Pressione Ctrl+Enter para enviar"></textarea>
+            
+       
+            <div class="char-palette" id="charPalette"></div>
+            
+            
+            <div class="button-group">
+                <button class="clear-btn" onclick="clearTerminal()">LIMPAR</button>
+                <button class="send-btn" onclick="sendData()">ENVIAR</button>
+            </div>
+            <div class="status" id="status"></div>
+        </div>
+    </div>
+    
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>CONFIGURAÇÃO SERIAL</h2>
+                <button class="close-btn" onclick="closeConfig()">&times;</button>
+            </div>
+            <div class="config-form">
+                <div class="form-group">
+                    <label>Baud Rate:</label>
+                    <select id="baudRate">
+                        <option value="9600">9600</option>
+                        <option value="19200">19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200" selected>115200</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Data Bits:</label>
+                    <select id="dataBits">
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8" selected>8</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Parity:</label>
+                    <select id="parity">
+                        <option value="NONE" selected>NONE</option>
+                        <option value="EVEN">EVEN</option>
+                        <option value="ODD">ODD</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Stop Bits:</label>
+                    <select id="stopBits">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+                
+                <button class="apply-btn" onclick="applyConfig()">APLICAR CONFIGURAÇÃO</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        const inputField = document.getElementById('inputField');
+        const configModal = document.getElementById('configModal');
+        const status = document.getElementById('status');
+        
+        // HP50g character map
+        const hp50gChars = [
+            ['\\<<', '\<\<'],
+            ['\\>>', '\>\>'],
+            ['\\->', '\→'],
+            ['\\<-', '\←'],
+            ['\\alpha', 'α'],
+            ['\\pi', 'π'],
+            ['\\theta', 'θ'],
+            ['\\rho', 'ρ'],
+            ['\\sigma', 'σ'],
+            ['\\tau', 'τ'],
+            ['\\omega', 'ω'],
+            ['\\summation', 'Σ'],
+            ['\\delta', 'δ'],
+            ['\\PI', 'Π'],
+            ['\\Omega', 'Ω'],
+            ['\\epsilon', 'ε'],
+            ['\\mi', 'μ'],
+            ['\\copyright', '©'],
+            ['\\copyleft', '🄯']
+        ];
+        
+        // Create character palette
+        function createCharPalette() {
+            const palette = document.getElementById('charPalette');
+            hp50gChars.forEach(char => {
+                const btn = document.createElement('button');
+                btn.className = 'char-btn';
+                btn.textContent = char[0];
+                btn.title = 'Inserir ' + char[0];
+                btn.onclick = () => insertChar(char[0]);
+                palette.appendChild(btn);
+            });
+        }
+        
+        function insertChar(char) {
+            const start = inputField.selectionStart;
+            const end = inputField.selectionEnd;
+            const text = inputField.value;
+            inputField.value = text.substring(0, start) + char + text.substring(end);
+            inputField.selectionStart = inputField.selectionEnd = start + char.length;
+            inputField.focus();
+        }
+        
+        // Matrix effect
+        function createMatrixEffect() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const matrixEffect = document.getElementById('matrixEffect');
+            matrixEffect.appendChild(canvas);
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const chars = "01010101010101010101010101010101";
+            const charArray = chars.split("");
+            const rainDrops = [];
+            
+            const fontSize = 14;
+            const columns = canvas.width / fontSize;
+            
+            for(let x = 0; x < columns; x++) {
+                rainDrops[x] = 1;
+            }
+            
+            function draw() {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.04)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = "#00FF00";
+                ctx.font = fontSize + "px monospace";
+                
+                for(let i = 0; i < rainDrops.length; i++) {
+                    const text = charArray[Math.floor(Math.random() * charArray.length)];
+                    ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                    
+                    if(rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        rainDrops[i] = 0;
+                    }
+                    rainDrops[i]++;
+                }
+            }
+            
+            setInterval(draw, 35);
+        }
+        
+        // Terminal functions
+        function appendToTerminal(text, type = 'receive') {
+            const formattedText = text
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>')
+                .replace(/ /g, '&nbsp;')
+                .replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
+            
+            if (type === 'send') {
+                terminal.innerHTML += '<span style="color: #00AAFF;">>> ' + formattedText + '</span>';
+            } else {
+                terminal.innerHTML += formattedText;
+            }
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        function sendData() {
+            const data = inputField.value;
+            if (data.trim() !== '') {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/send', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            appendToTerminal(data + '\n', 'send');
+                            inputField.value = '';
+                            status.textContent = 'Dados enviados com sucesso!';
+                            status.style.color = '#00FF00';
+                            setTimeout(() => status.textContent = '', 3000);
+                        } else {
+                            status.textContent = 'Erro ao enviar dados!';
+                            status.style.color = '#FF0000';
+                            setTimeout(() => status.textContent = '', 3000);
+                        }
+                    }
+                };
+                xhr.send('data=' + encodeURIComponent(data));
+            }
+        }
+        
+        function clearTerminal() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/clear', true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    terminal.innerHTML = '';
+//                    appendToTerminal('Terminal limpo...\n\n');
+                    status.textContent = 'Terminal limpo!';
+                    status.style.color = '#00FF00';
+                    setTimeout(() => status.textContent = '', 3000);
+                }
+            };
+            xhr.send();
+        }
+        
+
+        function checkForData() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/receive', true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200 && xhr.responseText) {
+                    appendToTerminal(xhr.responseText);
+                }
+            };
+            xhr.send();
+        }
+        
+        // Configuration functions
+        function openConfig() {
+            configModal.style.display = 'block';
+        }
+        
+        function closeConfig() {
+            configModal.style.display = 'none';
+        }
+        
+        function applyConfig() {
+            const baudRate = document.getElementById('baudRate').value;
+            const dataBits = document.getElementById('dataBits').value;
+            const parity = document.getElementById('parity').value;
+            const stopBits = document.getElementById('stopBits').value;
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/config', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    status.textContent = 'Configuração aplicada com sucesso!';
+                    status.style.color = '#00FF00';
+                    setTimeout(() => status.textContent = '', 3000);
+                    closeConfig();
+                }
+            };
+            xhr.send('baud=' + baudRate + '&data=' + dataBits + '&parity=' + parity + '&stop=' + stopBits);
+        }
+        
+        // Event listeners
+        inputField.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                sendData();
+                e.preventDefault();
+            }
+        });
+        
+        // Initialize
+        createMatrixEffect();
+        createCharPalette();
+        setInterval(checkForData, 100);
+        appendToTerminal('Terminal inicializado...\n');
+      //  appendToTerminal('Tradução automática de caracteres especiais ativada.\n\n');
+    </script>
+</body>
+</html>
