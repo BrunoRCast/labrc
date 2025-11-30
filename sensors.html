@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug de Sensores - Smartphone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .status {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .status-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+        }
+        
+        .status-indicator.active {
+            background: #2ed573;
+        }
+        
+        .sensors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .sensor-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sensor-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        
+        .sensor-icon {
+            font-size: 1.5rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        th {
+            font-weight: 600;
+            color: #fdbb2d;
+        }
+        
+        .value {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        .warning {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #ffa502;
+        }
+        
+        .visualization {
+            height: 100px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .orientation-cube {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform-style: preserve-3d;
+            transform: translateX(-50%);
+        }
+        
+        .cube-face {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .front { background: rgba(255, 0, 0, 0.7); transform: translateZ(30px); }
+        .back { background: rgba(0, 255, 0, 0.7); transform: rotateY(180deg) translateZ(30px); }
+        .right { background: rgba(0, 0, 255, 0.7); transform: rotateY(90deg) translateZ(30px); }
+        .left { background: rgba(255, 255, 0, 0.7); transform: rotateY(-90deg) translateZ(30px); }
+        .top { background: rgba(255, 0, 255, 0.7); transform: rotateX(90deg) translateZ(30px); }
+        .bottom { background: rgba(0, 255, 255, 0.7); transform: rotateX(-90deg) translateZ(30px); }
+        
+        @media (max-width: 768px) {
+            .sensors-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Debug de Sensores - Smartphone</h1>
+            <p class="subtitle">Monitoramento em tempo real dos sensores do dispositivo</p>
+            
+            <div class="status">
+                <div class="status-item">
+                    <div class="status-indicator" id="orientation-status"></div>
+                    <span>Orientação</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator" id="motion-status"></div>
+                    <span>Movimento</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator" id="geo-status"></div>
+                    <span>Geolocalização</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="sensors-grid">
+            <!-- Sensor de Orientação -->
+            <div class="sensor-card">
+                <div class="sensor-title">
+                    <span class="sensor-icon">🔄</span>
+                    <h2>Giroscópio / Orientação</h2>
+                </div>
+                <table>
+                    <tr>
+                        <th>Parâmetro</th>
+                        <th>Valor</th>
+                    </tr>
+                    <tr>
+                        <td>Alpha (eixo Z)</td>
+                        <td class="value" id="alpha">0.00°</td>
+                    </tr>
+                    <tr>
+                        <td>Beta (eixo X)</td>
+                        <td class="value" id="beta">0.00°</td>
+                    </tr>
+                    <tr>
+                        <td>Gamma (eixo Y)</td>
+                        <td class="value" id="gamma">0.00°</td>
+                    </tr>
+                    <tr>
+                        <td>Bússola Absoluta</td>
+                        <td class="value" id="absolute">Não</td>
+                    </tr>
+                </table>
+                <div class="visualization">
+                    <div class="orientation-cube" id="orientation-cube">
+                        <div class="cube-face front">F</div>
+                        <div class="cube-face back">T</div>
+                        <div class="cube-face right">D</div>
+                        <div class="cube-face left">E</div>
+                        <div class="cube-face top">C</div>
+                        <div class="cube-face bottom">B</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sensor de Movimento -->
+            <div class="sensor-card">
+                <div class="sensor-title">
+                    <span class="sensor-icon">📊</span>
+                    <h2>Acelerômetro / Movimento</h2>
+                </div>
+                <table>
+                    <tr>
+                        <th>Parâmetro</th>
+                        <th>Valor</th>
+                    </tr>
+                    <tr>
+                        <td>Aceleração X</td>
+                        <td class="value" id="accel-x">0.00 m/s²</td>
+                    </tr>
+                    <tr>
+                        <td>Aceleração Y</td>
+                        <td class="value" id="accel-y">0.00 m/s²</td>
+                    </tr>
+                    <tr>
+                        <td>Aceleração Z</td>
+                        <td class="value" id="accel-z">0.00 m/s²</td>
+                    </tr>
+                    <tr>
+                        <td>Gravidade X</td>
+                        <td class="value" id="gravity-x">0.00 m/s²</td>
+                    </tr>
+                    <tr>
+                        <td>Gravidade Y</td>
+                        <td class="value" id="gravity-y">0.00 m/s²</td>
+                    </tr>
+                    <tr>
+                        <td>Gravidade Z</td>
+                        <td class="value" id="gravity-z">0.00 m/s²</td>
+                    </tr>
+                    <tr>
+                        <td>Taxa de Rotação Alpha</td>
+                        <td class="value" id="rotation-alpha">0.00 °/s</td>
+                    </tr>
+                    <tr>
+                        <td>Taxa de Rotação Beta</td>
+                        <td class="value" id="rotation-beta">0.00 °/s</td>
+                    </tr>
+                    <tr>
+                        <td>Taxa de Rotação Gamma</td>
+                        <td class="value" id="rotation-gamma">0.00 °/s</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Geolocalização -->
+            <div class="sensor-card">
+                <div class="sensor-title">
+                    <span class="sensor-icon">📍</span>
+                    <h2>Geolocalização</h2>
+                </div>
+                <table>
+                    <tr>
+                        <th>Parâmetro</th>
+                        <th>Valor</th>
+                    </tr>
+                    <tr>
+                        <td>Latitude</td>
+                        <td class="value" id="latitude">0.000000</td>
+                    </tr>
+                    <tr>
+                        <td>Longitude</td>
+                        <td class="value" id="longitude">0.000000</td>
+                    </tr>
+                    <tr>
+                        <td>Precisão</td>
+                        <td class="value" id="accuracy">0 m</td>
+                    </tr>
+                    <tr>
+                        <td>Altitude</td>
+                        <td class="value" id="altitude">0 m</td>
+                    </tr>
+                    <tr>
+                        <td>Precisão Altitude</td>
+                        <td class="value" id="altitude-accuracy">0 m</td>
+                    </tr>
+                    <tr>
+                        <td>Direção</td>
+                        <td class="value" id="heading">0°</td>
+                    </tr>
+                    <tr>
+                        <td>Velocidade</td>
+                        <td class="value" id="speed">0 m/s</td>
+                    </tr>
+                    <tr>
+                        <td>Timestamp</td>
+                        <td class="value" id="geo-timestamp">-</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Informações do Dispositivo -->
+            <div class="sensor-card">
+                <div class="sensor-title">
+                    <span class="sensor-icon">📱</span>
+                    <h2>Informações do Dispositivo</h2>
+                </div>
+                <table>
+                    <tr>
+                        <th>Parâmetro</th>
+                        <th>Valor</th>
+                    </tr>
+                    <tr>
+                        <td>User Agent</td>
+                        <td class="value" id="user-agent">-</td>
+                    </tr>
+                    <tr>
+                        <td>Plataforma</td>
+                        <td class="value" id="platform">-</td>
+                    </tr>
+                    <tr>
+                        <td>Idioma</td>
+                        <td class="value" id="language">-</td>
+                    </tr>
+                    <tr>
+                        <td>Resolução de Tela</td>
+                        <td class="value" id="screen-resolution">-</td>
+                    </tr>
+                    <tr>
+                        <td>Orientação da Tela</td>
+                        <td class="value" id="screen-orientation">-</td>
+                    </tr>
+                    <tr>
+                        <td>Núcleos da CPU</td>
+                        <td class="value" id="cpu-cores">-</td>
+                    </tr>
+                    <tr>
+                        <td>Memória RAM</td>
+                        <td class="value" id="device-memory">-</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="warning" id="compatibility-warning">
+            <p>⚠️ Alguns sensores podem não estar disponíveis no seu dispositivo/navegador.</p>
+            <p>Certifique-se de estar usando HTTPS para acesso completo aos sensores.</p>
+        </div>
+    </div>
+
+    <script>
+        // Atualizar informações do dispositivo
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+        document.getElementById('platform').textContent = navigator.platform;
+        document.getElementById('language').textContent = navigator.language;
+        document.getElementById('screen-resolution').textContent = `${screen.width} × ${screen.height}`;
+        document.getElementById('screen-orientation').textContent = screen.orientation ? screen.orientation.type : 'Desconhecida';
+        document.getElementById('cpu-cores').textContent = navigator.hardwareConcurrency || 'Desconhecido';
+        document.getElementById('device-memory').textContent = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'Desconhecido';
+        
+        // Verificar compatibilidade
+        const orientationSupported = 'DeviceOrientationEvent' in window;
+        const motionSupported = 'DeviceMotionEvent' in window;
+        const geolocationSupported = 'geolocation' in navigator;
+        
+        // Atualizar indicadores de status
+        document.getElementById('orientation-status').classList.toggle('active', orientationSupported);
+        document.getElementById('motion-status').classList.toggle('active', motionSupported);
+        document.getElementById('geo-status').classList.toggle('active', geolocationSupported);
+        
+        // Sensor de Orientação (Giroscópio)
+        if (orientationSupported) {
+            window.addEventListener('deviceorientation', (event) => {
+                document.getElementById('alpha').textContent = event.alpha ? event.alpha.toFixed(2) + '°' : 'N/A';
+                document.getElementById('beta').textContent = event.beta ? event.beta.toFixed(2) + '°' : 'N/A';
+                document.getElementById('gamma').textContent = event.gamma ? event.gamma.toFixed(2) + '°' : 'N/A';
+                document.getElementById('absolute').textContent = event.absolute ? 'Sim' : 'Não';
+                
+                // Atualizar visualização 3D
+                const cube = document.getElementById('orientation-cube');
+                if (cube && event.beta !== null && event.gamma !== null && event.alpha !== null) {
+                    cube.style.transform = `translateX(-50%) rotateX(${event.beta}deg) rotateY(${event.gamma}deg) rotateZ(${event.alpha}deg)`;
+                }
+            });
+        } else {
+            document.getElementById('alpha').textContent = 'Não suportado';
+            document.getElementById('beta').textContent = 'Não suportado';
+            document.getElementById('gamma').textContent = 'Não suportado';
+        }
+        
+        // Sensor de Movimento (Acelerômetro)
+        if (motionSupported) {
+            window.addEventListener('devicemotion', (event) => {
+                const acceleration = event.acceleration;
+                const accelerationIncludingGravity = event.accelerationIncludingGravity;
+                const rotationRate = event.rotationRate;
+                
+                if (acceleration) {
+                    document.getElementById('accel-x').textContent = acceleration.x ? acceleration.x.toFixed(2) + ' m/s²' : 'N/A';
+                    document.getElementById('accel-y').textContent = acceleration.y ? acceleration.y.toFixed(2) + ' m/s²' : 'N/A';
+                    document.getElementById('accel-z').textContent = acceleration.z ? acceleration.z.toFixed(2) + ' m/s²' : 'N/A';
+                }
+                
+                if (accelerationIncludingGravity) {
+                    document.getElementById('gravity-x').textContent = accelerationIncludingGravity.x ? accelerationIncludingGravity.x.toFixed(2) + ' m/s²' : 'N/A';
+                    document.getElementById('gravity-y').textContent = accelerationIncludingGravity.y ? accelerationIncludingGravity.y.toFixed(2) + ' m/s²' : 'N/A';
+                    document.getElementById('gravity-z').textContent = accelerationIncludingGravity.z ? accelerationIncludingGravity.z.toFixed(2) + ' m/s²' : 'N/A';
+                }
+                
+                if (rotationRate) {
+                    document.getElementById('rotation-alpha').textContent = rotationRate.alpha ? rotationRate.alpha.toFixed(2) + ' °/s' : 'N/A';
+                    document.getElementById('rotation-beta').textContent = rotationRate.beta ? rotationRate.beta.toFixed(2) + ' °/s' : 'N/A';
+                    document.getElementById('rotation-gamma').textContent = rotationRate.gamma ? rotationRate.gamma.toFixed(2) + ' °/s' : 'N/A';
+                }
+            });
+        } else {
+            document.getElementById('accel-x').textContent = 'Não suportado';
+            document.getElementById('accel-y').textContent = 'Não suportado';
+            document.getElementById('accel-z').textContent = 'Não suportado';
+        }
+        
+        // Geolocalização
+        if (geolocationSupported) {
+            const geoOptions = {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            };
+            
+            const geoSuccess = (position) => {
+                const coords = position.coords;
+                document.getElementById('latitude').textContent = coords.latitude.toFixed(6);
+                document.getElementById('longitude').textContent = coords.longitude.toFixed(6);
+                document.getElementById('accuracy').textContent = coords.accuracy + ' m';
+                document.getElementById('altitude').textContent = coords.altitude ? coords.altitude.toFixed(2) + ' m' : 'N/A';
+                document.getElementById('altitude-accuracy').textContent = coords.altitudeAccuracy ? coords.altitudeAccuracy + ' m' : 'N/A';
+                document.getElementById('heading').textContent = coords.heading ? coords.heading.toFixed(2) + '°' : 'N/A';
+                document.getElementById('speed').textContent = coords.speed ? coords.speed.toFixed(2) + ' m/s' : 'N/A';
+                document.getElementById('geo-timestamp').textContent = new Date(position.timestamp).toLocaleTimeString();
+            };
+            
+            const geoError = (error) => {
+                console.error('Erro de geolocalização:', error);
+                document.getElementById('latitude').textContent = 'Erro: ' + error.message;
+            };
+            
+            navigator.geolocation.watchPosition(geoSuccess, geoError, geoOptions);
+        } else {
+            document.getElementById('latitude').textContent = 'Não suportado';
+            document.getElementById('longitude').textContent = 'Não suportado';
+        }
+        
+        // Atualizar orientação da tela em tempo real
+        if (screen.orientation) {
+            screen.orientation.addEventListener('change', () => {
+                document.getElementById('screen-orientation').textContent = screen.orientation.type;
+            });
+        }
+    </script>
+</body>
+</html>
